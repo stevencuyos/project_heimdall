@@ -1,6 +1,17 @@
 function doGet(e) {
   const t = HtmlService.createTemplateFromFile('index');
-  t.preview = String((e && e.parameter && e.parameter.as) || '').toLowerCase().replace(/[^a-z0-9._-]/g, '');
+  const preview = String((e && e.parameter && e.parameter.as) || '').toLowerCase().replace(/[^a-z0-9._-]/g, '');
+  t.preview = preview;
+
+  // Server-side fast bootstrap: pre-fetch agent data so client renders immediately on first frame
+  let bootstrap = null;
+  try {
+    bootstrap = getAgentData(preview);
+  } catch (err) {
+    bootstrap = null;
+  }
+  t.bootstrap = bootstrap;
+
   return t.evaluate()
     .setTitle('go/myplayschedule')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
@@ -29,10 +40,20 @@ const SH_SOURCES = 'Schedule Sources'; // links in B3 down, status written to C
 const SH_AGENTS = 'Agents List';       // LDAPs in B3 down
 const SH_SHIFTS = 'Shifts';
 const SH_TAGS = 'Tags';
+const SH_ROLES = 'Roles';
+const SH_TAGLOG = 'TagLog';
+const SH_CORR = 'Corrections';
+const SH_CLOG = 'CorrLog';
+const SH_ARCH = 'ShiftsArchive';
+const SH_ERR = 'ErrorLog';
+const SH_COBRA = 'Cobra Attendance';
+const SH_PROD = 'Productivity';
+const SH_YTD = 'YTD-ATT';
 const OT_FORM_URL = 'https://script.google.com/a/macros/google.com/s/AKfycbyvgg3UiYFPYsQS1rtYYLk5ooCByzOzj-nP7KjJpiOKt4YXOSujZCCIhWBRU9p6te_vyw/exec';
 const SHIFT_HEAD = ['Date', 'LDAP', 'EmpID', 'Name', 'Team', 'Supervisor', 'Channel', 'Code', 'Prev', 'ChangedAt', 'Synced'];
 const TAG_HEAD = ['Date', 'LDAP', 'Tag', 'By', 'At', 'Note'];
 
+let SHIFTS_CHANGED_ = false;
 let HOME_MEMO_ = null, ROS_MEMO_ = null, ROLES_MEMO_ = null; // reset on every execution
 function home_() { return HOME_MEMO_ || (HOME_MEMO_ = SpreadsheetApp.openById(HOME_ID)); }
 
@@ -368,7 +389,27 @@ function getAgentData(asLdap) {
   if (out.ok) { out.tags = tagsOf_(ldap); out.syncedAt = props.getProperty('syncedAt') || out.syncedAt || ''; }
   const rl = roleFor_(self);
   if (!out.ok && rl && ldap === self) out = { ok: true, ldap: ldap, me: { ldap: ldap, name: ldap, emp: (roster_()[ldap] || {}).emp || '' }, cfg: { shiftHours: SHIFT_HOURS }, shifts: {}, tags: {}, people: [], team: {}, syncedAt: out.syncedAt || '', preview: false };
-  out.weather = {};
+  // Hydrate with cached weather if available so client has weather without waiting
+  try {
+    const wxHit = cache.get('wx2');
+    out.weather = wxHit ? JSON.parse(wxHit) : {};
+  } catch (e) {
+    out.weather = {};
+  }
+  // Hydrate with cached OT and Perf if available in cache
+  try {
+    const otHit = cache.get('ot1:' + ldap);
+    if (otHit) {
+      const otParsed = JSON.parse(otHit);
+      out.cachedOt = otParsed.items || [];
+    }
+  } catch (e) {}
+  try {
+    const pfHit = cache.get('pf1:' + ldap);
+    if (pfHit) {
+      out.cachedPerf = JSON.parse(pfHit);
+    }
+  } catch (e) {}
   out.syncErrs = isAdmin_(self) ? +(props.getProperty('syncErrs') || 0) : 0;
   out.corr = corrFor_(ldap);
   out.crN = rl ? corrOpenCount_(rl) : 0;
@@ -580,8 +621,6 @@ function getWeatherIcon(code) {
  * SUPERVISOR VIEW
  * ------------------------------------------------------------------
  */
-const SH_ROLES = 'Roles';
-const SH_TAGLOG = 'TagLog';
 const TAG_CODES = ['DONE', 'LATE', 'OVL', 'DNC', 'ABS', 'NCNS', 'INACTIVE', 'SL', 'VL', 'MVL', 'MWL', 'LOA', 'LWOP', 'OFF', 'RDOT'];
 
 function tagOk_(tag, code) {
@@ -865,7 +904,6 @@ function nonAgents_(ros) {
  * ESTART CORRECTIONS
  * ------------------------------------------------------------------
  */
-const SH_CORR = 'Corrections';
 const CORR_HEAD = ['ID', 'Submitted', 'LDAP', 'Name', 'Team', 'Supervisor', 'Date', 'Scheduled', 'Type', 'Login', 'ShiftType', 'Comment', 'Status', 'ReviewedBy', 'ReviewedAt', 'Note', 'Reply'];
 const CORR_TYPES = ['Leave', 'Rest day', 'LOA (Workday)', 'No/Incorrect schedule', 'Tools/Login/eStart issue', 'Overtime', 'Shift cross-over (Absence)', 'Shift cross-over (Leave)'];
 const CORR_SHIFT_TYPES = ['Regular shift - no OT', 'RD OT', 'Pre-shift OT', 'Post-shift OT'];
@@ -895,7 +933,6 @@ function readCorr_() {
     .map(corrObj_).filter(o => o.id).map(o => decor_(o, ros)));
 }
 
-const SH_CLOG = 'CorrLog';
 const CLOG_HEAD = ['Timestamp', 'By', 'ID', 'LDAP', 'Date', 'Action', 'From', 'To', 'Note'];
 
 function corrLog_(by, o, action, from, to, note) {
@@ -1135,7 +1172,6 @@ function agentCorrAction(id, action, text) {
  * ARCHIVE - keeps the Shifts tab small and fast
  * ------------------------------------------------------------------
  */
-const SH_ARCH = 'ShiftsArchive';
 const KEEP_DAYS = 120;
 
 function keepFrom_() {
@@ -1430,8 +1466,6 @@ function otTeamLive_(ldaps, from, to) {
  * CLIENT ERROR LOG + AGENT SUMMARY PANEL
  * ------------------------------------------------------------------
  */
-const SH_ERR = 'ErrorLog';
-
 function logClientError(where, msg) {
   const who = who_();
   const cache = CacheService.getScriptCache(), k = 'err:' + who;
@@ -1512,9 +1546,6 @@ function getAgentSummary(ldap, ym) {
  * COBRA ATTENDANCE / PRODUCTIVITY / YTD
  * ------------------------------------------------------------------
  */
-const SH_COBRA = 'Cobra Attendance';
-const SH_PROD = 'Productivity';
-const SH_YTD = 'YTD-ATT';
 const PERF_DAYS = 120;
 const COL_COBRA = { ldap: 1, date: 0, val: 4 };   // B = ldap, A = date, E = attendance
 const COL_PROD  = { ldap: 4, date: 3, val: 6 };   // E = agent, D = date, G = productivity
@@ -1612,8 +1643,6 @@ function getMyYtd(asLdap) {
  * SPEED: versioned caches, fresh tags, background snapshots
  * ------------------------------------------------------------------
  */
-let SHIFTS_CHANGED_ = false;
-
 function getWeather() { return weatherMap_(); }
 
 // Run this after manually editing the Shifts tab, to drop the cached schedules
@@ -1713,19 +1742,8 @@ function otSnap_() {
   return (OTSNAP_MEMO_ = s);
 }
 
-function readOtLive_(ldap) { return otSnap_()[ldap] || []; }
-
-function otTeamLive_(ldaps, from, to) {
-  const snap = otSnap_(), rank = { DONE: 0, PENDING: 1, REJECTED: 2 }, out = {};
-  ldaps.forEach(l => (snap[l] || []).forEach(o => {
-    if (o.d < from || o.d > to) return;
-    const k = l + '|' + o.d, e = out[k] || (out[k] = { h: 0, st: 'DONE', n: 0 });
-    e.h += o.h; e.n++;
-    if (rank[o.st] > rank[e.st]) e.st = o.st;
-  }));
-  Object.keys(out).forEach(k => { out[k].h = Math.round(out[k].h * 100) / 100; });
-  return out;
-}
+function readOt_(ldap) { return otSnap_()[ldap] || []; }
+function otTeam_(ldaps, from, to) { return otTeamLive_(ldaps, from, to); }
 
 // ---- background refresh (every 5 minutes) ----
 function warmCaches() {
