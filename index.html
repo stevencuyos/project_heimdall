@@ -645,6 +645,7 @@ textarea.fi{resize:vertical;min-height:90px}
 
 <script>
 var AS = <?!= JSON.stringify(preview) ?>;
+var BOOTSTRAP_DATA = <?!= JSON.stringify(bootstrap) ?>;
 var D = null, sel = '', T = '', view = { y: 0, m: 0 }, open = false, hidden = {};
 var mode = 'month', rs = true, helpOpen = false, lastSeen = 0, LUNCH = 1;
 try { hidden = JSON.parse(localStorage.getItem('mps-hide') || '{}'); } catch (e) {}
@@ -1269,26 +1270,24 @@ function crSubmit(){
   if(p.c.length<3){er.textContent='Add a short comment or a Snip-It link.';return}
   er.textContent='';crBusy=true;
   var go=$('crf-go');go.disabled=true;go.textContent='Sending\u2026';
-  google.script.run
-    .withSuccessHandler(function(r){
-      crBusy=false;
-      D.corr=crAll();D.corr.unshift(r.item);
-      closeCr();sel=p.d;open=true;var q=parse(sel);view={y:q.y,m:q.m};
-      render(false);toast('Sent to your supervisor',null);
-    })
-    .withFailureHandler(function(e){crBusy=false;go.disabled=false;go.textContent='Submit';er.textContent=friendly(e.message)})
-    .submitCorrection(p);
+  rpc('submitCorrection', [p], function(r){
+    crBusy=false;
+    D.corr=crAll();D.corr.unshift(r.item);
+    closeCr();sel=p.d;open=true;var q=parse(sel);view={y:q.y,m:q.m};
+    render(false);toast('Sent to your supervisor',null);
+  }, function(e){
+    crBusy=false;go.disabled=false;go.textContent='Submit';er.textContent=friendly(e.message);
+  });
 }
 function crAgent(id,act){
   var inp=document.getElementById('rp-'+id),txt=inp?inp.value.trim():'';
   if(act==='reply'&&!txt){if(inp){inp.classList.add('bad');inp.focus()}return}
-  google.script.run
-    .withSuccessHandler(function(r){
-      D.corr=crAll().map(function(o){return o.id===id?r.item:o});
-      render(false);
-    })
-    .withFailureHandler(function(e){toast('Couldn\u2019t update: '+e.message,null)})
-    .agentCorrAction(id,act,txt);
+  rpc('agentCorrAction', [id,act,txt], function(r){
+    D.corr=crAll().map(function(o){return o.id===id?r.item:o});
+    render(false);
+  }, function(e){
+    toast('Couldn\u2019t update: '+friendly(e.message),null);
+  });
 }
 
 /* --- reviewer queue --- */
@@ -1296,10 +1295,11 @@ function openCrQueue(){
   var c=$('crc');c.className='crc wide';
   c.innerHTML='<div class="qhd"><div class="crh"><h3>eStart corrections</h3><button class="ib sm" data-cr="close" aria-label="Close">'+XI+'</button></div></div>'+qSkel();
   $('crm').hidden=false;crQ=null;
-  google.script.run
-    .withSuccessHandler(function(r){crQ=r;if(r&&r.ok&&crTeam&&r.teams.indexOf(crTeam)<0)crTeam='';renderCrQ()})
-    .withFailureHandler(function(e){crQ={ok:false,message:e.message};renderCrQ()})
-    .getCorrQueue();
+  rpc('getCorrQueue', [], function(r){
+    crQ=r;if(r&&r.ok&&crTeam&&r.teams.indexOf(crTeam)<0)crTeam='';renderCrQ();
+  }, function(e){
+    crQ={ok:false,message:e.message};renderCrQ();
+  });
 }
 function crFilt(){
   var a=(crQ&&crQ.items)||[];
@@ -1371,24 +1371,23 @@ function crReview(id,st){
   var n=document.getElementById('qn-'+id),note=n?n.value.trim():'',ts=document.getElementById('qt-'+id),tag=(st==='DONE'&&ts)?ts.value:'';
   if((st==='REJECTED'||st==='INFO')&&!note){if(n){n.classList.add('bad');n.focus()}return}
   crBusy=true;
-  google.script.run
-    .withSuccessHandler(function(r){
-      crBusy=false;
-      var old=null,nt='';
-      if(r.tagged&&r.tagged!=='skipped')nt=r.tagged==='cleared'?'':r.tagged;
-      crQ.items=crQ.items.map(function(o){
-        if(o.id!==id)return o;
-        old=o;
-        return Object.assign({},o,r.item,{tag:(r.tagged&&r.tagged!=='skipped')?nt:o.tag});
-      });
-      D.crN=crQ.items.filter(function(o){return o.st==='PENDING'&&o.l!==crQ.me}).length;
-      if(old&&r.tagged&&r.tagged!=='skipped')crSyncTag(old,nt,r.item.by);
-      crSyncBadge(r.item);
-      renderBar();renderCrQ();
-      if(tag)toast(r.tagged==='skipped'?'Marked corrected \u00b7 tag not changed (not applicable to that shift)':'Marked corrected \u00b7 '+(r.tagged==='cleared'?'tag cleared':'tagged '+TAG[r.tagged].s),null);
-    })
-    .withFailureHandler(function(e){crBusy=false;toast('Couldn\u2019t save: '+e.message,null)})
-    .reviewCorrection(id,st,note,tag);
+  rpc('reviewCorrection', [id,st,note,tag], function(r){
+    crBusy=false;
+    var old=null,nt='';
+    if(r.tagged&&r.tagged!=='skipped')nt=r.tagged==='cleared'?'':r.tagged;
+    crQ.items=crQ.items.map(function(o){
+      if(o.id!==id)return o;
+      old=o;
+      return Object.assign({},o,r.item,{tag:(r.tagged&&r.tagged!=='skipped')?nt:o.tag});
+    });
+    D.crN=crQ.items.filter(function(o){return o.st==='PENDING'&&o.l!==crQ.me}).length;
+    if(old&&r.tagged&&r.tagged!=='skipped')crSyncTag(old,nt,r.item.by);
+    crSyncBadge(r.item);
+    renderBar();renderCrQ();
+    if(tag)toast(r.tagged==='skipped'?'Marked corrected \u00b7 tag not changed (not applicable to that shift)':'Marked corrected \u00b7 '+(r.tagged==='cleared'?'tag cleared':'tagged '+TAG[r.tagged].s),null);
+  }, function(e){
+    crBusy=false;toast('Couldn\u2019t save: '+friendly(e.message),null);
+  });
 }
 function crWeek(d,team){
   closeCr();
@@ -1455,6 +1454,7 @@ function renderOtc(){
     }).join('')+'</div></div>';
 }
 function loadOt(){
+  if(D.otLoaded && D.ot && !D.otErr) { renderOtc(); return; }
   D.otLoaded=false;D.otErr='';renderOtc();
   var done=function(){D.otLoaded=true;if(!tmode)render(false)};
   fromPre('ot','getMyOt',[AS],function(r){D.ot=(r&&r.items)||[];D.otErr=(r&&r.ok===false)?(r.message||'error'):'';done()},function(e){D.otErr=e.message||'error';done()});
@@ -1838,6 +1838,7 @@ function pcol(v){return v>=100?'var(--dn)':v>=90?'var(--ov)':'var(--nc)'}
 function fmtp(v){return (Math.round(v*10)/10)+'%'}
 function avgIn(m,fn){if(!m)return null;var s=0,n=0;Object.keys(m).forEach(function(k){if(fn(k)){s+=m[k];n++}});return n?s/n:null}
 function loadPerf(){
+  if(D.pa && D.pq && Object.keys(D.pa).length && !D.pfErr) return;
   fromPre('pf','getMyPerf',[AS],function(r){
     D.pa=(r&&r.a)||{};D.pq=(r&&r.q)||{};D.pfErr=(r&&r.err)||'';
     if(D.pfErr)toast('Some attendance data couldn\u2019t load',null);
@@ -1942,6 +1943,7 @@ function fromPre(k,fn,args,ok,fail){
   if(o.done)fin();else o.cb=fin;
 }
 function loadWx(){
+  if(D.weather && Object.keys(D.weather).length) return;
   fromPre('wx','getWeather',[],function(w){D.weather=w||{};if(tmode)renderBar();else render(false)},function(){});
 }
 
@@ -2353,24 +2355,21 @@ function commit(items,msg,isUndo){
   tsel={};
   renderTeam();
   toast(msg+' \u00b7 '+real.length+(real.length===1?' cell':' cells'),isUndo?null:prev.map(function(x){return {d:x.d,l:x.l,t:x.t}}));
-  google.script.run
-    .withSuccessHandler(function(r){
-      var sk={},nsk=0;
-      ((r&&r.skippedKeys)||[]).forEach(function(k){sk[k]=1;nsk++});
-      prev.forEach(function(x){
-        var p=personOf(x.l);if(!p)return;
-        if(sk[x.d+'|'+x.l]){if(x.o)p.t[x.d]=x.o;else delete p.t[x.d]}
-        else if(p.t[x.d]&&r){p.t[x.d].by=r.by;p.t[x.d].at=r.at}
-      });
-      renderTeam();
-      if(nsk)toast(nsk+' skipped (not allowed)',null);
-    })
-    .withFailureHandler(function(err){
-      prev.forEach(function(x){var p=personOf(x.l);if(!p)return;if(x.o)p.t[x.d]=x.o;else delete p.t[x.d]});
-      renderTeam();
-      toast('Couldn\u2019t save: '+err.message,null);
-    })
-    .applyTags(real);
+  rpc('applyTags', [real], function(r){
+    var sk={},nsk=0;
+    ((r&&r.skippedKeys)||[]).forEach(function(k){sk[k]=1;nsk++});
+    prev.forEach(function(x){
+      var p=personOf(x.l);if(!p)return;
+      if(sk[x.d+'|'+x.l]){if(x.o)p.t[x.d]=x.o;else delete p.t[x.d]}
+      else if(p.t[x.d]&&r){p.t[x.d].by=r.by;p.t[x.d].at=r.at}
+    });
+    renderTeam();
+    if(nsk)toast(nsk+' skipped (not allowed)',null);
+  }, function(err){
+    prev.forEach(function(x){var p=personOf(x.l);if(!p)return;if(x.o)p.t[x.d]=x.o;else delete p.t[x.d]});
+    renderTeam();
+    toast('Couldn\u2019t save: '+friendly(err.message),null);
+  });
 }
 function toast(msg,undo){msg=friendly(msg);
   var el=$('toast');
@@ -2478,17 +2477,35 @@ document.addEventListener('mousedown',function(e){
   }
   paintSel();
 });
+var dragRaf = null;
 document.addEventListener('mouseover',function(e){
   if(!tdrag||!tanchor)return;
   var w=e.target.closest('.tcw[data-r]');
   if(!w)return;
-  rect(tanchor.r,tanchor.c,+w.dataset.r,+w.dataset.c);
-  paintSel();
+  var targetR=+w.dataset.r, targetC=+w.dataset.c;
+  if(dragRaf) cancelAnimationFrame(dragRaf);
+  dragRaf = requestAnimationFrame(function(){
+    rect(tanchor.r,tanchor.c,targetR,targetC);
+    paintSel();
+  });
 });
-document.addEventListener('mouseup',function(){tdrag=false});
-window.addEventListener('blur',function(){tdrag=false});
+document.addEventListener('mouseup',function(){
+  tdrag=false;
+  if(dragRaf){ cancelAnimationFrame(dragRaf); dragRaf=null; }
+});
+window.addEventListener('blur',function(){
+  tdrag=false;
+  if(dragRaf){ cancelAnimationFrame(dragRaf); dragRaf=null; }
+});
+var tqTimer = null;
 document.addEventListener('input',function(e){
-  if(e.target&&e.target.id==='tq'&&tmode){tfilter.q=e.target.value;renderTeamGrid()}
+  if(e.target&&e.target.id==='tq'&&tmode){
+    clearTimeout(tqTimer);
+    tqTimer = setTimeout(function(){
+      tfilter.q=e.target.value;
+      renderTeamGrid();
+    }, 120);
+  }
 });
 
 function selAg(){var a={};Object.keys(tsel).forEach(function(k){a[k.split('|')[1]]=1});var n=Object.keys(a).length;return n+' agent'+(n===1?'':'s')}
@@ -2503,9 +2520,23 @@ function selAg(){var a={};Object.keys(tsel).forEach(function(k){a[k.split('|')[1
   $('tgrid').addEventListener('scroll',function(){this.classList.toggle('scx',this.scrollLeft>2);this.classList.toggle('scy',this.scrollTop>2)},{passive:true});
   var k=$('cpk');if(k)k.textContent=/Mac|iPhone|iPad/.test(navigator.platform)?'\u2318K':'Ctrl K';
 })();
-prefetch('ot','getMyOt',[AS]);prefetch('pf','getMyPerf',[AS]);prefetch('wx','getWeather',[]);
 try{var bq=JSON.parse(localStorage.getItem('mps-boot')||'null');if(bq&&bq.tm&&bq.ws&&bq.team&&bq.day===today())prefetch('tw','getTeamWeek',[bq.team,bq.ws])}catch(e){}
-rpc('getAgentData',[AS],init,function(err){showMsg({message:err.message})});
+
+if(BOOTSTRAP_DATA && BOOTSTRAP_DATA.ok){
+  // Hydrate cached OT and Perf from bootstrap if available
+  if(BOOTSTRAP_DATA.cachedOt){
+    BOOTSTRAP_DATA.ot=BOOTSTRAP_DATA.cachedOt;
+    BOOTSTRAP_DATA.otLoaded=true;
+  }
+  if(BOOTSTRAP_DATA.cachedPerf){
+    BOOTSTRAP_DATA.pa=BOOTSTRAP_DATA.cachedPerf.a||{};
+    BOOTSTRAP_DATA.pq=BOOTSTRAP_DATA.cachedPerf.q||{};
+  }
+  init(BOOTSTRAP_DATA);
+} else {
+  prefetch('ot','getMyOt',[AS]);prefetch('pf','getMyPerf',[AS]);prefetch('wx','getWeather',[]);
+  rpc('getAgentData',[AS],init,function(err){showMsg({message:err.message})});
+}
 </script>
 </body>
 </html>
