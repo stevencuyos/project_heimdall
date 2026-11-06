@@ -51,7 +51,7 @@ const SH_PROD = 'Productivity';
 const SH_YTD = 'YTD-ATT';
 const OT_FORM_URL = 'https://script.google.com/a/macros/google.com/s/AKfycbyvgg3UiYFPYsQS1rtYYLk5ooCByzOzj-nP7KjJpiOKt4YXOSujZCCIhWBRU9p6te_vyw/exec';
 const SHIFT_HEAD = ['Date', 'LDAP', 'EmpID', 'Name', 'Team', 'Supervisor', 'Channel', 'Code', 'Prev', 'ChangedAt', 'Synced'];
-const TAG_HEAD = ['Date', 'LDAP', 'Tag', 'By', 'At', 'Note'];
+const TAG_HEAD = ['Date', 'LDAP', 'Tag', 'By', 'At', 'Note', 'In', 'Out'];
 
 let SHIFTS_CHANGED_ = false;
 let HOME_MEMO_ = null, ROS_MEMO_ = null, ROLES_MEMO_ = null; // reset on every execution
@@ -779,12 +779,18 @@ function applyTags(items) {
   lock.waitLock(20000);
   try {
     const ss = home_();
-    const want = {};
+    const want = {}, times = {};
     items.forEach(it => {
       const d = String((it && it.d) || '');
       const l = String((it && it.l) || '').toLowerCase();
       const t = String((it && it.t) || '').toUpperCase();
-      if (/^\d{4}-\d{2}-\d{2}$/.test(d) && l && (t === '' || TAG_CODES.indexOf(t) > -1)) want[d + '|' + l] = t;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(d) && l && (t === '' || TAG_CODES.indexOf(t) > -1)) {
+        want[d + '|' + l] = t;
+        if (it.i !== undefined || it.o !== undefined) {
+          const ti = String(it.i || ''), to = String(it.o || '');
+          times[d + '|' + l] = { i: /^\d{2}:\d{2}$/.test(ti) ? ti : '', o: /^\d{2}:\d{2}$/.test(to) ? to : '' };
+        }
+      }
     });
 
     const sh = ss.getSheetByName(SH_SHIFTS);
@@ -823,18 +829,22 @@ function applyTags(items) {
     Object.keys(ok).forEach(k => {
       const t = ok[k], p = k.split('|');
       const i = (k in idx) ? idx[k] : -1;
-      const old = (i > -1 && rows[i]) ? String(rows[i][2]).toUpperCase() : '';
-      if (t === old) { applied++; return; }
+      const prev = (i > -1 && rows[i]) ? rows[i] : null;
+      const old = prev ? String(prev[2]).toUpperCase() : '';
+      const tm = times[k];
+      const oi = prev ? String(prev[6] || '') : '', oo = prev ? String(prev[7] || '') : '';
+      const ni = tm ? tm.i : (t === old ? oi : ''), no = tm ? tm.o : (t === old ? oo : '');
+      if (t === old && ni === oi && no === oo) { applied++; return; }
       if (t === '') {
         rows[i] = null;
         delete idx[k];
       } else if (i > -1) {
-        rows[i] = [p[0], p[1], t, by, stamp, String(rows[i][5] || '')];
+        rows[i] = [p[0], p[1], t, by, stamp, String(prev[5] || ''), ni, no];
       } else {
         idx[k] = rows.length;
-        rows.push([p[0], p[1], t, by, stamp, '']);
+        rows.push([p[0], p[1], t, by, stamp, '', ni, no]);
       }
-      log.push([logStamp, who, p[0], p[1], old, t, '']);
+      log.push([logStamp, who, p[0], p[1], old, t, (ni || no) ? 'in ' + ni + ' out ' + no : '']);
       applied++;
     });
 
@@ -994,6 +1004,18 @@ function shiftInfo_(ldap, d) {
   return out;
 }
 
+function shiftInfoFast_(ldap, d) {
+  try {
+    const key = 'agent5:' + ldap + ':' + (PropertiesService.getScriptProperties().getProperty('sver') || '0') + ':' + rosterSig_();
+    const hit = CacheService.getScriptCache().get(key);
+    if (hit) {
+      const a = JSON.parse(hit);
+      if (a && a.ok && a.me && a.me.name) return { name: a.me.name, code: (a.shifts && a.shifts[d] && a.shifts[d].c) || '' };
+    }
+  } catch (e) {}
+  return shiftInfo_(ldap, d);
+}
+
 function corrMail_(kind, o) {
   if (!CORR_EMAILS) return;
   try {
@@ -1033,12 +1055,12 @@ function submitCorrection(p) {
   if (c.length < 3) throw new Error('Add a short comment or a Snip-It link');
   if (c.length > 800) throw new Error('Comment is too long (800 characters max)');
 
-  const lock = LockService.getScriptLock();
+  const lock = LockService.getUserLock();
   lock.waitLock(20000);
   try {
     const dup = readCorr_().some(o => o.l === who && o.d === d && o.t === type && (o.st === 'PENDING' || o.st === 'INFO'));
     if (dup) throw new Error('You already have an open "' + type + '" request for ' + d);
-    const info = shiftInfo_(who, d);
+    const info = shiftInfoFast_(who, d);
     const id = 'C' + Date.now().toString(36).toUpperCase();
     const stamp = Utilities.formatDate(new Date(), MPS_TZ, 'yyyy-MM-dd HH:mm');
     const row = [id, stamp, who, info.name, me.team, me.sup, d, info.code, type, lt, sty, c, 'PENDING', '', '', '', ''];
@@ -1106,7 +1128,7 @@ function reviewCorrection(id, status, note, tag) {
     if (!role.all && role.teams.map(tkey_).indexOf(tkey_(o.team)) < 0) throw new Error('This request belongs to another team');
     if (o.st === 'WITHDRAWN') throw new Error('The agent withdrew this request');
 
-    const nm = shiftInfo_(who, '').name;
+    const nm = shiftInfoFast_(who, '').name;
     const by = nm ? (nm.indexOf(',') > -1 ? nm.split(',')[1].trim() : nm) : (who.charAt(0).toUpperCase() + who.slice(1));
     row[12] = status;
     row[13] = by;
@@ -1137,7 +1159,7 @@ function reviewCorrection(id, status, note, tag) {
 function agentCorrAction(id, action, text) {
   const who = who_();
   if (!who) throw new Error('Can\u2019t verify your account');
-  const lock = LockService.getScriptLock();
+  const lock = LockService.getUserLock();
   lock.waitLock(20000);
   try {
     const sh = home_().getSheetByName(SH_CORR);
@@ -1629,13 +1651,16 @@ function getMyYtd(asLdap) {
     });
   }
   rows.sort((a, b) => (a.o + a.m) < (b.o + b.m) ? 1 : -1);   // latest first
-  const cur = rows.filter(r => r.v !== null)[0] || null;
-  const seen = {}, months = [];
+  const seen = {}, all = [];
   rows.forEach(r => {
-    if (r.v === null || !cur || r.m === cur.m || seen[r.m]) return;
-    seen[r.m] = 1; months.push({ m: r.m, v: r.v });
+    if (r.v === null || !r.m || seen[r.m]) return;
+    seen[r.m] = 1; all.push({ m: r.m, v: r.v, o: r.o });
   });
-  return { ok: true, v: cur ? cur.v : null, asOf: cur ? cur.o : '', months: months };
+  const cur = all[0] || null;
+  const yr = cur ? cur.m.slice(0, 4) : '';
+  const inYr = all.filter(x => x.m.slice(0, 4) === yr);
+  const ytd = inYr.length ? Math.round(inYr.reduce((s, x) => s + x.v, 0) / inYr.length * 10) / 10 : null;
+  return { ok: true, v: ytd, n: inYr.length, cur: cur ? cur.v : null, curM: cur ? cur.m : '', asOf: cur ? cur.o : '', months: all.slice(1) };
 }
 
 /**
@@ -1653,7 +1678,7 @@ function tagsOf_(ldap) {
   if (!sh || sh.getLastRow() < 2) return out;
   sh.getRange(2, 1, sh.getLastRow() - 1, TAG_HEAD.length).getValues().forEach(r => {
     if (String(r[1]).toLowerCase() !== ldap) return;
-    out[ds_(r[0])] = { t: String(r[2]).toUpperCase(), by: String(r[3]), at: String(r[4]), n: String(r[5]) };
+    out[ds_(r[0])] = { t: String(r[2]).toUpperCase(), by: String(r[3]), at: String(r[4]), n: String(r[5]), i: String(r[6] || ''), o: String(r[7] || '') };
   });
   return out;
 }
@@ -1662,9 +1687,9 @@ function tagsWeek_(days) {
   const sh = home_().getSheetByName(SH_TAGS), out = {};
   if (!sh || sh.getLastRow() < 2) return out;
   const inWk = {}; days.forEach(d => { inWk[d] = 1; });
-  sh.getRange(2, 1, sh.getLastRow() - 1, 5).getValues().forEach(r => {
+  sh.getRange(2, 1, sh.getLastRow() - 1, 8).getValues().forEach(r => {
     const d = ds_(r[0]);
-    if (inWk[d]) out[String(r[1]).toLowerCase() + '|' + d] = { t: String(r[2]).toUpperCase(), by: String(r[3]), at: String(r[4]) };
+    if (inWk[d]) out[String(r[1]).toLowerCase() + '|' + d] = { t: String(r[2]).toUpperCase(), by: String(r[3]), at: String(r[4]), i: String(r[6] || ''), o: String(r[7] || '') };
   });
   return out;
 }
@@ -1758,3 +1783,6 @@ function setupWarm() {
   ScriptApp.newTrigger('warmCaches').timeBased().everyMinutes(5).create();
   warmCaches();
 }
+
+function readOt_(ldap) { return readOtLive_(ldap); }
+function otTeam_(ldaps, from, to) { return otTeamLive_(ldaps, from, to); }
