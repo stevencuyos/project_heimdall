@@ -9,11 +9,68 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <script>
-(function(){try{var t=localStorage.getItem('mps-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}})();
+(function(){try{var t=localStorage.getItem('mps-theme');if(t)document.documentElement.setAttribute('data-theme',t);var sb=localStorage.getItem('mps-sb-collapsed');if(sb==='1')document.documentElement.classList.add('sb-collapsed');}catch(e){}})();
 </script>
 <style>
-:root{--bg:#f6f8fc;--cd:#fff;--tx:#1f1f1f;--t2:#5f6368;--t3:#9aa0a6;--ln:#e1e5ec;--ac:#0b57d0;--on:#fff;--ab:#d3e3fd;--bl:#1a73e8;--nt:#3d3fa8;--ont:#fff;--dn:#188038;--ov:#e37400;--sl:#6b4eff;--ab2:#e8590c;--nc:#c5221f;--cl:#aeb4bd;--al:40%;--rh:104px;--hr:52px;--mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace}
-[data-theme=dark]{--bg:#07090c;--cd:#0f1216;--tx:#e8eaed;--t2:#9aa0a6;--t3:#5f6670;--ln:#232932;--ac:#8ab4f8;--on:#0b1b33;--ab:#1c2a44;--bl:#8ab4f8;--nt:#9aa5ff;--ont:#0c1033;--dn:#81c995;--ov:#fdd663;--sl:#b6a8ff;--ab2:#ffa370;--nc:#f28b82;--cl:#8e949c;--al:74%}
+:root{
+  --bg:#f8fafd;
+  --cd:#ffffff;
+  --cd-subtle:#f0f4f9;
+  --tx:#1f1f1f;
+  --t2:#44474e;
+  --t3:#74777f;
+  --ln:#dde3ea;
+  --ac:#0b57d0;
+  --on:#ffffff;
+  --ab:#d3e3fd;
+  --ab-subtle:#edf2fa;
+  --bl:#1a73e8;
+  --nt:#383bb3;
+  --ont:#ffffff;
+  --dn:#137333;
+  --ov:#b06000;
+  --sl:#6344e6;
+  --ab2:#e8590c;
+  --nc:#ba1a1a;
+  --cl:#8e9199;
+  --al:40%;
+  --rh:104px;
+  --hr:52px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:0 4px 12px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05);
+  --shadow-lg:0 12px 32px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.06);
+  --radius-sm:8px;
+  --radius-md:14px;
+  --radius-lg:20px;
+  --radius-xl:28px;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+[data-theme=dark]{
+  --bg:#111318;
+  --cd:#191c20;
+  --cd-subtle:#20242a;
+  --tx:#e2e2e9;
+  --t2:#c4c6d0;
+  --t3:#8e9099;
+  --ln:#2d3139;
+  --ac:#a8c7fa;
+  --on:#062e6f;
+  --ab:#1f3358;
+  --ab-subtle:#182236;
+  --bl:#a8c7fa;
+  --nt:#bec2ff;
+  --ont:#171d7a;
+  --dn:#6dd58c;
+  --ov:#ffba38;
+  --sl:#cfbdff;
+  --ab2:#ffb59d;
+  --nc:#ffb4ab;
+  --cl:#8e9199;
+  --al:74%;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md:0 4px 14px rgba(0,0,0,0.4);
+  --shadow-lg:0 12px 36px rgba(0,0,0,0.55);
+}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--tx);font:14px/1.4 Inter,'Google Sans',Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
@@ -467,7 +524,7 @@ textarea.fi{resize:vertical;min-height:90px}
 .cpr .es{padding:28px 12px}
 .bar>*{flex:none;white-space:nowrap}
 .bar>.sp{flex:1;min-width:8px}
-#sy,#wxn,#hlp,.bar>.ib[data-act="theme"]{display:none!important}
+#sy,#wxn,#hlp{display:none!important}
 .who{cursor:pointer;position:relative;padding:4px 4px 4px 12px;border-radius:24px;transition:background .15s}
 .who:hover{background:color-mix(in srgb,var(--tx) 6%,transparent)}
 .who .t{white-space:nowrap}
@@ -540,6 +597,58 @@ textarea.fi{resize:vertical;min-height:90px}
 .cbg.ck{background:var(--ov);color:#fff}
 .tcw.dsp{box-shadow:inset 0 0 0 1.5px var(--nc)}
 .tcw.dck{box-shadow:inset 0 0 0 1.5px var(--ov)}
+
+/* Collapsible sidebar for desktop */
+.sb-toggle{display:inline-grid;place-items:center;transition:transform .2s ease}
+html.sb-collapsed .side{display:none!important}
+html.sb-collapsed .sb-toggle svg{transform:rotate(180deg)}
+.sb-collapsed-pill{display:none;position:fixed;left:16px;bottom:24px;z-index:35;background:var(--cd);border:.5px solid var(--ln);border-radius:20px;padding:8px 14px;box-shadow:var(--shadow-md);font-size:12px;font-weight:500;color:var(--ac);align-items:center;gap:6px;cursor:pointer}
+html.sb-collapsed .sb-collapsed-pill{display:flex}
+
+/* Quick filter toolbar above team schedule */
+.qf-bar{display:flex;align-items:center;gap:10px;padding:8px 16px;background:var(--cd);border-bottom:.5px solid var(--ln);flex:none;min-height:48px}
+.qf-input{height:32px;padding:0 12px;border-radius:16px;border:.5px solid var(--ln);background:var(--cd-subtle);color:var(--tx);font-size:12px;outline:none;width:220px;transition:border-color .15s,width .2s}
+.qf-input:focus{border-color:var(--ac);width:260px;background:var(--cd)}
+.qf-chips{display:flex;align-items:center;gap:6px}
+.qf-chip{height:28px;padding:0 12px;border-radius:14px;border:.5px solid var(--ln);background:var(--cd);font-size:11px;font-weight:500;color:var(--t2);transition:all .15s}
+.qf-chip:hover{background:var(--ab-subtle);color:var(--ac)}
+.qf-chip.on{background:var(--ab);color:var(--ac);border-color:transparent;font-weight:500}
+.qf-stat{margin-left:auto;font-size:11px;color:var(--t2)}
+
+/* Modernized shift cards and cell micro-interactions */
+.cell{border-radius:6px;transition:background .15s ease,box-shadow .15s ease}
+.cell:hover{background:color-mix(in srgb,var(--tx) 5%,var(--cd))}
+.cell.s{background:color-mix(in srgb,var(--ac) 10%,var(--cd));box-shadow:inset 0 0 0 2px var(--ac)}
+.sc{border-radius:12px;padding:6px 10px 6px 14px;box-shadow:var(--shadow-sm);transition:transform .12s ease,box-shadow .12s ease}
+.sc:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
+.tc{border-radius:12px;padding:0 12px;font-weight:500;letter-spacing:-0.01em;transition:transform .12s ease,box-shadow .12s ease,background .12s ease}
+.tc:hover:not(.sel){transform:translateY(-1px);box-shadow:var(--shadow-sm)}
+.tc.sel{box-shadow:0 0 0 2px var(--ac),var(--shadow-md)!important;transform:scale(0.98)}
+.tc.cur{box-shadow:0 0 0 2px var(--ac),0 0 0 5px color-mix(in srgb,var(--ac) 30%,transparent)!important}
+.tc.o{color:var(--t3);opacity:.85}
+.tc.o:hover{opacity:1}
+.tc.p{border:1.5px dashed color-mix(in srgb,var(--ov) 75%,transparent);background:color-mix(in srgb,var(--ov) 8%,var(--cd))}
+.tc.f{background:color-mix(in srgb,var(--ac) 12%,var(--cd));color:var(--ac)}
+.tc.t{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 25%,transparent)}
+.pbtn{border-radius:20px;font-weight:500;box-shadow:var(--shadow-sm);transition:all .15s ease}
+.pbtn:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
+.pbtn.pri{background:var(--ac);color:var(--on);border-color:transparent}
+.pbtn.pri:hover{background:color-mix(in srgb,var(--ac) 90%,black)}
+.card0{box-shadow:var(--shadow-lg);border-radius:var(--radius-xl)}
+.main{box-shadow:var(--shadow-sm);border-radius:var(--radius-lg)}
+.stc{box-shadow:var(--shadow-sm);border-radius:var(--radius-md)}
+.abar{box-shadow:var(--shadow-lg);border-radius:28px}
+.toast{box-shadow:var(--shadow-lg);border-radius:24px;letter-spacing:-0.01em}
+
+/* Corrections modern modal and tabs */
+.crc{box-shadow:var(--shadow-lg);border-radius:var(--radius-xl);transition:all .2s ease}
+.crc.wide{box-shadow:var(--shadow-lg);border-radius:var(--radius-xl)}
+.qc{border-radius:var(--radius-md);border:.5px solid var(--ln);background:var(--cd);padding:14px 16px;box-shadow:var(--shadow-sm);transition:all .15s ease}
+.qc:hover{box-shadow:var(--shadow-md)}
+.qch-tab{height:32px;padding:0 14px;border-radius:16px;border:.5px solid var(--ln);background:var(--cd);font-size:12px;font-weight:500;color:var(--t2);cursor:pointer;transition:all .15s ease}
+.qch-tab:hover{background:var(--ab-subtle);color:var(--ac)}
+.qch-tab.on{background:var(--ab);color:var(--ac);border-color:transparent}
+
 </style>
 </head>
 <body>
@@ -568,7 +677,7 @@ textarea.fi{resize:vertical;min-height:90px}
 <div id="app" hidden>
   <header class="bar">
     <button class="ib mnu" data-act="menu" aria-label="Teammates"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-    <div class="logo"><svg class="pl" viewBox="0 0 24 24" aria-hidden="true"><path fill="#FFD500" d="M22.018 13.298l-3.919 2.218-3.515-3.493 3.543-3.521 3.891 2.202a1.49 1.49 0 0 1 0 2.594z"/><path fill="#00A0FF" d="M1.337.924a1.486 1.486 0 0 0-.112.568v21.017c0 .217.045.419.124.6l11.155-11.087L1.337.924z"/><path fill="#00F076" d="M13.544 10.989l3.258-3.238L3.45.195a1.466 1.466 0 0 0-.946-.179l11.04 10.973z"/><path fill="#FF3A44" d="M13.544 13.056l-11 10.933c.298.036.612-.016.906-.183l13.324-7.54-3.23-3.21z"/></svg><span class="wm">go/<b>myplayschedule</b></span></div>
+    <button class="ib sb-toggle" id="sbtog" data-act="sb-toggle" aria-label="Toggle sidebar" title="Toggle sidebar"><svg viewBox="0 0 24 24"><path d="M3 5h18M3 12h12M3 19h18"/></svg></button><div class="logo"><svg class="pl" viewBox="0 0 24 24" aria-hidden="true"><path fill="#FFD500" d="M22.018 13.298l-3.919 2.218-3.515-3.493 3.543-3.521 3.891 2.202a1.49 1.49 0 0 1 0 2.594z"/><path fill="#00A0FF" d="M1.337.924a1.486 1.486 0 0 0-.112.568v21.017c0 .217.045.419.124.6l11.155-11.087L1.337.924z"/><path fill="#00F076" d="M13.544 10.989l3.258-3.238L3.45.195a1.466 1.466 0 0 0-.946-.179l11.04 10.973z"/><path fill="#FF3A44" d="M13.544 13.056l-11 10.933c.298.036.612-.016.906-.183l13.324-7.54-3.23-3.21z"/></svg><span class="wm">go/<b>myplayschedule</b></span></div>
     <button class="pbtn" data-nav="today">Today</button>
     <button class="ib" data-nav="prev" aria-label="Previous"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
     <button class="ib" data-nav="next" aria-label="Next"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>
@@ -607,9 +716,10 @@ textarea.fi{resize:vertical;min-height:90px}
     <section class="main"><div id="msum" class="msum"></div><div id="cal"></div></section>
     <aside class="dr"><div class="dri" id="dri"></div></aside>
     <aside class="side tside" id="tside"></aside>
-    <section class="main tmain"><div id="tgrid"></div></section>
+    <section class="main tmain"><div id="qfbar" class="qf-bar"></div><div id="tgrid"></div></section>
   </div>
-  <div class="scrim" data-act="close"></div>
+  <button class="sb-collapsed-pill" data-act="sb-toggle"><svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>Expand sidebar</button>
+<div class="scrim" data-act="close"></div>
   <div id="abar" class="abar" hidden></div>
   <div id="toast" class="toast" hidden></div>
   <div id="otm" class="otm" hidden>
@@ -645,6 +755,7 @@ textarea.fi{resize:vertical;min-height:90px}
 
 <script>
 var AS = <?!= JSON.stringify(preview) ?>;
+var BOOTSTRAP_DATA = <?!= JSON.stringify(bootstrap) ?>;
 var D = null, sel = '', T = '', view = { y: 0, m: 0 }, open = false, hidden = {};
 var mode = 'month', rs = true, helpOpen = false, lastSeen = 0, LUNCH = 1;
 try { hidden = JSON.parse(localStorage.getItem('mps-hide') || '{}'); } catch (e) {}
@@ -716,6 +827,7 @@ function ini(n){var s=String(n||''),i=s.indexOf(','),sur=(i>-1?s.slice(0,i):s).t
 function hue(l){var h=0;for(var i=0;i<l.length;i++)h=(h*31+l.charCodeAt(i))%360;return h}
 function tg(t,c){return '<span class="tg" style="--c:'+c+'">'+esc(t)+'</span>'}
 function toggleTheme(){var r=document.documentElement,n=r.getAttribute('data-theme')==='dark'?'light':'dark';r.setAttribute('data-theme',n);try{localStorage.setItem('mps-theme',n)}catch(e){}}
+function toggleSidebar(){var r=document.documentElement,col=r.classList.toggle('sb-collapsed');try{localStorage.setItem('mps-sb-collapsed',col?'1':'0')}catch(e){}}
 function saveHidden(){try{localStorage.setItem('mps-hide',JSON.stringify(hidden))}catch(e){}}
 
 function photo(l){return 'https://moma-teams-photos.corp.google.com/photos/'+encodeURIComponent(l)+'?sz=100'}
@@ -1075,7 +1187,7 @@ function showMsg(r){
 function init(res){
   D=res;
   if(!res||!res.ok){showMsg(res);return}
-  D.team=D.team||{};D.people=D.people||[];D.weather=D.weather||{};
+  D.team=D.team||{};D.people=D.people||[];D.weather=D.weather||{};D.shifts=D.shifts||{};D.tags=D.tags||{};D.cfg=D.cfg||{shiftHours:9};
   T=today();sel=T;var p=parse(T);view={y:p.y,m:p.m};
   open=window.innerWidth>=1600;
   try{mode=localStorage.getItem('mps-mode')==='week'?'week':'month'}catch(e){}
@@ -1094,6 +1206,7 @@ document.addEventListener('click',function(e){
   if(!e.target.closest('.side,[data-act=menu]'))$('app').classList.remove('sb');
   if(!t)return;
   if(t.dataset.act==='theme'){toggleTheme();return}
+  if(t.dataset.act==='sb-toggle'){toggleSidebar();return}
   if(!D||!D.ok)return;
   if(t.dataset.mode){setMode(t.dataset.mode);return}
   if(tmode){teamClick(t);return}
@@ -1269,26 +1382,24 @@ function crSubmit(){
   if(p.c.length<3){er.textContent='Add a short comment or a Snip-It link.';return}
   er.textContent='';crBusy=true;
   var go=$('crf-go');go.disabled=true;go.textContent='Sending\u2026';
-  google.script.run
-    .withSuccessHandler(function(r){
-      crBusy=false;
-      D.corr=crAll();D.corr.unshift(r.item);
-      closeCr();sel=p.d;open=true;var q=parse(sel);view={y:q.y,m:q.m};
-      render(false);toast('Sent to your supervisor',null);
-    })
-    .withFailureHandler(function(e){crBusy=false;go.disabled=false;go.textContent='Submit';er.textContent=friendly(e.message)})
-    .submitCorrection(p);
+  rpc('submitCorrection', [p], function(r){
+    crBusy=false;
+    D.corr=crAll();D.corr.unshift(r.item);
+    closeCr();sel=p.d;open=true;var q=parse(sel);view={y:q.y,m:q.m};
+    render(false);toast('Sent to your supervisor',null);
+  }, function(e){
+    crBusy=false;go.disabled=false;go.textContent='Submit';er.textContent=friendly(e.message);
+  });
 }
 function crAgent(id,act){
   var inp=document.getElementById('rp-'+id),txt=inp?inp.value.trim():'';
   if(act==='reply'&&!txt){if(inp){inp.classList.add('bad');inp.focus()}return}
-  google.script.run
-    .withSuccessHandler(function(r){
-      D.corr=crAll().map(function(o){return o.id===id?r.item:o});
-      render(false);
-    })
-    .withFailureHandler(function(e){toast('Couldn\u2019t update: '+e.message,null)})
-    .agentCorrAction(id,act,txt);
+  rpc('agentCorrAction', [id,act,txt], function(r){
+    D.corr=crAll().map(function(o){return o.id===id?r.item:o});
+    render(false);
+  }, function(e){
+    toast('Couldn\u2019t update: '+friendly(e.message),null);
+  });
 }
 
 /* --- reviewer queue --- */
@@ -1296,10 +1407,11 @@ function openCrQueue(){
   var c=$('crc');c.className='crc wide';
   c.innerHTML='<div class="qhd"><div class="crh"><h3>eStart corrections</h3><button class="ib sm" data-cr="close" aria-label="Close">'+XI+'</button></div></div>'+qSkel();
   $('crm').hidden=false;crQ=null;
-  google.script.run
-    .withSuccessHandler(function(r){crQ=r;if(r&&r.ok&&crTeam&&r.teams.indexOf(crTeam)<0)crTeam='';renderCrQ()})
-    .withFailureHandler(function(e){crQ={ok:false,message:e.message};renderCrQ()})
-    .getCorrQueue();
+  rpc('getCorrQueue', [], function(r){
+    crQ=r;if(r&&r.ok&&crTeam&&r.teams.indexOf(crTeam)<0)crTeam='';renderCrQ();
+  }, function(e){
+    crQ={ok:false,message:e.message};renderCrQ();
+  });
 }
 function crFilt(){
   var a=(crQ&&crQ.items)||[];
@@ -1349,7 +1461,7 @@ function renderCrQ(){
   });
   var tsel=crQ.teams.length>1?'<select class="fi" style="width:auto;min-height:34px;padding:4px 12px" onchange="crTeam=this.value;renderCrQ()"><option value="">All teams</option>'+crQ.teams.map(function(t){return '<option'+(t===crTeam?' selected':'')+'>'+esc(t)+'</option>'}).join('')+'</select>':'';
   var chips=[['PENDING','Pending',cnt.PENDING],['INFO','Info needed',cnt.INFO],['DONE','Corrected',cnt.DONE],['REJECTED','Declined',cnt.REJECTED],['ALL','All',all.length]]
-    .map(function(x){return '<button class="'+(crFilter===x[0]?'on':'')+'" data-cr="flt" data-x="'+x[0]+'">'+x[1]+' \u00b7 '+x[2]+'</button>'}).join('');
+    .map(function(x){return '<button class="qch-tab '+(crFilter===x[0]?'on':'')+'" data-cr="flt" data-x="'+x[0]+'">'+x[1]+' \u00b7 '+x[2]+'</button>'}).join('');
   c.innerHTML='<div class="qhd"><div class="crh"><h3>eStart corrections</h3><span style="display:flex;align-items:center;gap:10px">'+tsel+'<button class="ib sm" data-cr="close" aria-label="Close">'+XI+'</button></span></div><div class="chp">'+chips+'</div></div>'
     +'<div class="ql">'+(list.length?list.map(crCard).join(''):es('check','Nothing here',crFilter==='PENDING'?'No requests are waiting for review.':'No requests match this filter.'))+'</div>';
 }
@@ -1371,24 +1483,23 @@ function crReview(id,st){
   var n=document.getElementById('qn-'+id),note=n?n.value.trim():'',ts=document.getElementById('qt-'+id),tag=(st==='DONE'&&ts)?ts.value:'';
   if((st==='REJECTED'||st==='INFO')&&!note){if(n){n.classList.add('bad');n.focus()}return}
   crBusy=true;
-  google.script.run
-    .withSuccessHandler(function(r){
-      crBusy=false;
-      var old=null,nt='';
-      if(r.tagged&&r.tagged!=='skipped')nt=r.tagged==='cleared'?'':r.tagged;
-      crQ.items=crQ.items.map(function(o){
-        if(o.id!==id)return o;
-        old=o;
-        return Object.assign({},o,r.item,{tag:(r.tagged&&r.tagged!=='skipped')?nt:o.tag});
-      });
-      D.crN=crQ.items.filter(function(o){return o.st==='PENDING'&&o.l!==crQ.me}).length;
-      if(old&&r.tagged&&r.tagged!=='skipped')crSyncTag(old,nt,r.item.by);
-      crSyncBadge(r.item);
-      renderBar();renderCrQ();
-      if(tag)toast(r.tagged==='skipped'?'Marked corrected \u00b7 tag not changed (not applicable to that shift)':'Marked corrected \u00b7 '+(r.tagged==='cleared'?'tag cleared':'tagged '+TAG[r.tagged].s),null);
-    })
-    .withFailureHandler(function(e){crBusy=false;toast('Couldn\u2019t save: '+e.message,null)})
-    .reviewCorrection(id,st,note,tag);
+  rpc('reviewCorrection', [id,st,note,tag], function(r){
+    crBusy=false;
+    var old=null,nt='';
+    if(r.tagged&&r.tagged!=='skipped')nt=r.tagged==='cleared'?'':r.tagged;
+    crQ.items=crQ.items.map(function(o){
+      if(o.id!==id)return o;
+      old=o;
+      return Object.assign({},o,r.item,{tag:(r.tagged&&r.tagged!=='skipped')?nt:o.tag});
+    });
+    D.crN=crQ.items.filter(function(o){return o.st==='PENDING'&&o.l!==crQ.me}).length;
+    if(old&&r.tagged&&r.tagged!=='skipped')crSyncTag(old,nt,r.item.by);
+    crSyncBadge(r.item);
+    renderBar();renderCrQ();
+    if(tag)toast(r.tagged==='skipped'?'Marked corrected \u00b7 tag not changed (not applicable to that shift)':'Marked corrected \u00b7 '+(r.tagged==='cleared'?'tag cleared':'tagged '+TAG[r.tagged].s),null);
+  }, function(e){
+    crBusy=false;toast('Couldn\u2019t save: '+friendly(e.message),null);
+  });
 }
 function crWeek(d,team){
   closeCr();
@@ -1455,6 +1566,7 @@ function renderOtc(){
     }).join('')+'</div></div>';
 }
 function loadOt(){
+  if(D.otLoaded && D.ot && !D.otErr) { renderOtc(); return; }
   D.otLoaded=false;D.otErr='';renderOtc();
   var done=function(){D.otLoaded=true;if(!tmode)render(false)};
   fromPre('ot','getMyOt',[AS],function(r){D.ot=(r&&r.items)||[];D.otErr=(r&&r.ok===false)?(r.message||'error'):'';done()},function(e){D.otErr=e.message||'error';done()});
@@ -1496,7 +1608,7 @@ function rpc(fn,args,ok,fail,tries){
     if(tries>0&&isTransient(e)){setTimeout(function(){rpc(fn,args,ok,fail,tries-1)},1500);return}
     if(fail)fail(e);else toast(friendly(e&&e.message),null);
   });
-  r[fn].apply(r,args);
+  if(r[fn]) r[fn].apply(r,args); else if(fail) fail(new Error("Method not found: " + fn));
 }
 var lastErr=0;
 function reportErr(w,m){
@@ -1560,7 +1672,7 @@ function refreshAll(){
     rfBusy=false;rfLast=Date.now();
     if(!r||!r.ok){renderSync();toast(friendly(r&&r.message||'Couldn\u2019t refresh'),null);return}
     var k={ot:D.ot,otLoaded:D.otLoaded,otErr:D.otErr,w:D.weather};
-    D=r;D.team=D.team||{};D.people=D.people||[];D.weather=D.weather||{};
+    D=r;D.team=D.team||{};D.people=D.people||[];D.weather=D.weather||{};D.shifts=D.shifts||{};D.tags=D.tags||{};D.cfg=D.cfg||{shiftHours:9};
     D.ot=k.ot;D.otLoaded=k.otLoaded;D.otErr=k.otErr;if(k.w&&Object.keys(k.w).length)D.weather=k.w;
     render(false);loadOt();loadPerf();
     if(tmode)loadTeam();
@@ -1838,6 +1950,7 @@ function pcol(v){return v>=100?'var(--dn)':v>=90?'var(--ov)':'var(--nc)'}
 function fmtp(v){return (Math.round(v*10)/10)+'%'}
 function avgIn(m,fn){if(!m)return null;var s=0,n=0;Object.keys(m).forEach(function(k){if(fn(k)){s+=m[k];n++}});return n?s/n:null}
 function loadPerf(){
+  if(D.pa && D.pq && Object.keys(D.pa).length && !D.pfErr) return;
   fromPre('pf','getMyPerf',[AS],function(r){
     D.pa=(r&&r.a)||{};D.pq=(r&&r.q)||{};D.pfErr=(r&&r.err)||'';
     if(D.pfErr)toast('Some attendance data couldn\u2019t load',null);
@@ -1935,13 +2048,14 @@ function prefetch(k,fn,args){
   rpc(fn,args,function(r){o.done=true;o.r=r;if(o.cb)o.cb()},function(e){o.done=true;o.e=e;if(o.cb)o.cb()});
 }
 function fromPre(k,fn,args,ok,fail){
-  var o=PRE[k];
+  var o=(typeof PRE !== "undefined" && PRE) ? PRE[k] : null;
   if(!o){rpc(fn,args,ok,fail);return}
   delete PRE[k];
   var fin=function(){o.e?fail(o.e):ok(o.r)};
   if(o.done)fin();else o.cb=fin;
 }
 function loadWx(){
+  if(D.weather && Object.keys(D.weather).length) return;
   fromPre('wx','getWeather',[],function(w){D.weather=w||{};if(tmode)renderBar();else render(false)},function(){});
 }
 
@@ -2156,6 +2270,27 @@ function teamMini(){
   return '<div class="mini"><div class="mh"><span>'+MF[tview.m-1]+' '+tview.y+'</span><span><button class="ib" data-ta="mm" data-x="prev" aria-label="Previous month">'+CHL+'</button><button class="ib" data-ta="mm" data-x="next" aria-label="Next month">'+CHR+'</button></span></div>'
     +'<div class="mw">'+['S','M','T','W','T','F','S'].map(function(x){return '<span>'+x+'</span>'}).join('')+'</div><div class="mdg">'+h+'</div></div>';
 }
+
+function renderQfBar(){
+  var bar = $('qfbar');
+  if(!bar) return;
+  if(!tmode || !TD || !TD.ok){ bar.innerHTML=''; bar.style.display='none'; return; }
+  bar.style.display='flex';
+  var chs={};TD.people.forEach(function(p){if(p.ch&&p.ch!=='-')chs[p.ch]=1});
+  var cl=Object.keys(chs).sort();
+  var h='<input class="qf-input" id="qf-input" placeholder="Quick search agents..." autocomplete="off" value="'+esc(tfilter.q)+'" title="Quick search agents">';
+  if(cl.length>1){
+    h+='<div class="qf-chips"><span style="font-size:11px;color:var(--t3);font-weight:500;margin-left:4px">Filter:</span>';
+    cl.forEach(function(c){
+      h+='<button class="qf-chip '+(tfilter.ch===c?'on':'')+'" data-ta="ch" data-x="'+esc(c)+'">'+esc(c)+'</button>';
+    });
+    if(tfilter.ch) h+='<button class="qf-chip" data-ta="clrf" style="color:var(--nc)">Clear</button>';
+    h+='</div>';
+  }
+  h+='<div class="qf-stat m">'+tv.length+' of '+TD.people.length+' agents</div>';
+  bar.innerHTML=h;
+}
+
 function renderTeamSide(){
   var ok=TD&&TD.ok,h='';
   if(ok&&TD.teams.length>1){
@@ -2213,6 +2348,7 @@ function renderTeamGrid(){
     el.innerHTML=es(TD.reason?'info':'warn',TD.reason?'Nothing to show yet':'Couldn’t load the team schedule',mm[TD.reason]||TD.message||'Something went wrong.',TD.reason?'':'<button class="cbtn pri" data-ta="retry">Try again</button>');tv=[];return;
   }
   tv=vis();
+  renderQfBar();
   var h='<div class="tgh tgc0"><div class="tt1">'+esc(TD.team.toUpperCase())+'</div><div class="ss">'+TD.people.length+' agents'+(tv.length!==TD.people.length?' \u00b7 '+tv.length+' shown':'')+'</div></div>';
   TD.days.forEach(function(d){
     var sched=0,tagged=0;
@@ -2353,24 +2489,21 @@ function commit(items,msg,isUndo){
   tsel={};
   renderTeam();
   toast(msg+' \u00b7 '+real.length+(real.length===1?' cell':' cells'),isUndo?null:prev.map(function(x){return {d:x.d,l:x.l,t:x.t}}));
-  google.script.run
-    .withSuccessHandler(function(r){
-      var sk={},nsk=0;
-      ((r&&r.skippedKeys)||[]).forEach(function(k){sk[k]=1;nsk++});
-      prev.forEach(function(x){
-        var p=personOf(x.l);if(!p)return;
-        if(sk[x.d+'|'+x.l]){if(x.o)p.t[x.d]=x.o;else delete p.t[x.d]}
-        else if(p.t[x.d]&&r){p.t[x.d].by=r.by;p.t[x.d].at=r.at}
-      });
-      renderTeam();
-      if(nsk)toast(nsk+' skipped (not allowed)',null);
-    })
-    .withFailureHandler(function(err){
-      prev.forEach(function(x){var p=personOf(x.l);if(!p)return;if(x.o)p.t[x.d]=x.o;else delete p.t[x.d]});
-      renderTeam();
-      toast('Couldn\u2019t save: '+err.message,null);
-    })
-    .applyTags(real);
+  rpc('applyTags', [real], function(r){
+    var sk={},nsk=0;
+    ((r&&r.skippedKeys)||[]).forEach(function(k){sk[k]=1;nsk++});
+    prev.forEach(function(x){
+      var p=personOf(x.l);if(!p)return;
+      if(sk[x.d+'|'+x.l]){if(x.o)p.t[x.d]=x.o;else delete p.t[x.d]}
+      else if(p.t[x.d]&&r){p.t[x.d].by=r.by;p.t[x.d].at=r.at}
+    });
+    renderTeam();
+    if(nsk)toast(nsk+' skipped (not allowed)',null);
+  }, function(err){
+    prev.forEach(function(x){var p=personOf(x.l);if(!p)return;if(x.o)p.t[x.d]=x.o;else delete p.t[x.d]});
+    renderTeam();
+    toast('Couldn\u2019t save: '+friendly(err.message),null);
+  });
 }
 function toast(msg,undo){msg=friendly(msg);
   var el=$('toast');
@@ -2478,17 +2611,35 @@ document.addEventListener('mousedown',function(e){
   }
   paintSel();
 });
+var dragRaf = null;
 document.addEventListener('mouseover',function(e){
   if(!tdrag||!tanchor)return;
   var w=e.target.closest('.tcw[data-r]');
   if(!w)return;
-  rect(tanchor.r,tanchor.c,+w.dataset.r,+w.dataset.c);
-  paintSel();
+  var targetR=+w.dataset.r, targetC=+w.dataset.c;
+  if(dragRaf) cancelAnimationFrame(dragRaf);
+  dragRaf = requestAnimationFrame(function(){
+    rect(tanchor.r,tanchor.c,targetR,targetC);
+    paintSel();
+  });
 });
-document.addEventListener('mouseup',function(){tdrag=false});
-window.addEventListener('blur',function(){tdrag=false});
+document.addEventListener('mouseup',function(){
+  tdrag=false;
+  if(dragRaf){ cancelAnimationFrame(dragRaf); dragRaf=null; }
+});
+window.addEventListener('blur',function(){
+  tdrag=false;
+  if(dragRaf){ cancelAnimationFrame(dragRaf); dragRaf=null; }
+});
+var tqTimer = null;
 document.addEventListener('input',function(e){
-  if(e.target&&e.target.id==='tq'&&tmode){tfilter.q=e.target.value;renderTeamGrid()}
+  if(e.target&&(e.target.id==='tq'||e.target.id==='qf-input')&&tmode){
+    clearTimeout(tqTimer);
+    tqTimer = setTimeout(function(){
+      tfilter.q=e.target.value;
+      renderTeamGrid();
+    }, 120);
+  }
 });
 
 function selAg(){var a={};Object.keys(tsel).forEach(function(k){a[k.split('|')[1]]=1});var n=Object.keys(a).length;return n+' agent'+(n===1?'':'s')}
@@ -2503,9 +2654,23 @@ function selAg(){var a={};Object.keys(tsel).forEach(function(k){a[k.split('|')[1
   $('tgrid').addEventListener('scroll',function(){this.classList.toggle('scx',this.scrollLeft>2);this.classList.toggle('scy',this.scrollTop>2)},{passive:true});
   var k=$('cpk');if(k)k.textContent=/Mac|iPhone|iPad/.test(navigator.platform)?'\u2318K':'Ctrl K';
 })();
-prefetch('ot','getMyOt',[AS]);prefetch('pf','getMyPerf',[AS]);prefetch('wx','getWeather',[]);
 try{var bq=JSON.parse(localStorage.getItem('mps-boot')||'null');if(bq&&bq.tm&&bq.ws&&bq.team&&bq.day===today())prefetch('tw','getTeamWeek',[bq.team,bq.ws])}catch(e){}
-rpc('getAgentData',[AS],init,function(err){showMsg({message:err.message})});
+
+if(BOOTSTRAP_DATA && BOOTSTRAP_DATA.ok){
+  // Hydrate cached OT and Perf from bootstrap if available
+  if(BOOTSTRAP_DATA.cachedOt){
+    BOOTSTRAP_DATA.ot=BOOTSTRAP_DATA.cachedOt;
+    BOOTSTRAP_DATA.otLoaded=true;
+  }
+  if(BOOTSTRAP_DATA.cachedPerf){
+    BOOTSTRAP_DATA.pa=BOOTSTRAP_DATA.cachedPerf.a||{};
+    BOOTSTRAP_DATA.pq=BOOTSTRAP_DATA.cachedPerf.q||{};
+  }
+  init(BOOTSTRAP_DATA);
+} else {
+  prefetch('ot','getMyOt',[AS]);prefetch('pf','getMyPerf',[AS]);prefetch('wx','getWeather',[]);
+  rpc('getAgentData',[AS],init,function(err){showMsg({message:err.message})});
+}
 </script>
 </body>
 </html>
